@@ -1,9 +1,16 @@
-import { useTransactionContext } from '@/context/transaction.context'
+import {
+  type TransactionFilters,
+  useTransactionContext,
+} from '@/context/transaction.context'
 import { colors } from '@/shared/colors'
+import { TransactionTypes } from '@/shared/enums/transactionTypes'
 import { useErrorHandler } from '@/shared/hooks/useErrorHandler'
 import { MaterialIcons } from '@expo/vector-icons'
+import clsx from 'clsx'
 import { useEffect, useState } from 'react'
 import {
+  FlatList,
+  Modal,
   Text,
   TextInput,
   TouchableOpacity,
@@ -16,11 +23,54 @@ export const FilterInput = () => {
     searchText,
     setSearchText,
     fetchTransactions,
+    categories,
+    filters,
+    setFilters,
   } = useTransactionContext()
 
   const { errorHandler } = useErrorHandler()
 
-  const [text, setText] = useState('')
+  const [text, setText] = useState(searchText)
+  const [showModal, setShowModal] = useState(false)
+  const [localFilters, setLocalFilters] =
+    useState<TransactionFilters>(filters)
+
+  const handleOpenModal = () => {
+    setLocalFilters(filters)
+    setShowModal(true)
+  }
+
+  const handleCloseModal = () => {
+    setShowModal(false)
+  }
+
+  const handleSetType = (typeId: number) => {
+    setLocalFilters((prevState) => ({
+      ...prevState,
+      typeId: prevState.typeId === typeId ? undefined : typeId,
+    }))
+  }
+
+  const handleSetCategory = (categoryId: number) => {
+    setLocalFilters((prevState) => ({
+      ...prevState,
+      categoryId:
+        prevState.categoryId === categoryId ? undefined : categoryId,
+    }))
+  }
+
+  const handleApplyFilters = () => {
+    setFilters(localFilters)
+    setShowModal(false)
+  }
+
+  const handleClearFilters = () => {
+    setText('')
+    setSearchText('')
+    setLocalFilters({})
+    setFilters({})
+    setShowModal(false)
+  }
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -44,7 +94,7 @@ export const FilterInput = () => {
     }
 
     fetchData()
-  }, [searchText])
+  }, [searchText, filters, fetchTransactions, errorHandler])
 
   return (
     <View className="mb-3 mt-4 w-[90%] self-center">
@@ -59,23 +109,130 @@ export const FilterInput = () => {
         </Text>
       </View>
 
-      <TouchableOpacity className="mt-6 flex-row items-center justify-between">
+      <View className="mt-6 flex-row items-center justify-between rounded-md bg-background-primary">
         <TextInput
-          className="h-[50px] w-full bg-background-primary pl-4 text-lg text-white"
+          className="h-[50px] flex-1 pl-4 pr-14 text-lg text-white"
           placeholder="Busque uma transação"
           placeholderTextColor={colors.gray[600]}
           value={text}
           onChangeText={setText}
         />
 
-        <TouchableOpacity className="absolute right-0 mr-3">
+        <TouchableOpacity
+          className="absolute right-0 mr-3 h-[50px] w-[45px] items-center justify-center"
+          onPress={handleOpenModal}
+        >
           <MaterialIcons
             name="filter-list"
             color={colors['accent-brand-light']}
             size={26}
           />
         </TouchableOpacity>
-      </TouchableOpacity>
+      </View>
+
+      <Modal
+        visible={showModal}
+        transparent
+        animationType="slide"
+        onRequestClose={handleCloseModal}
+      >
+        <View className="flex-1 justify-end bg-black/60">
+          <View className="rounded-t-3xl bg-background-secondary px-6 pb-8 pt-6">
+            <View className="mb-6 flex-row items-center justify-between">
+              <Text className="text-xl font-bold text-white">
+                Filtrar transações
+              </Text>
+
+              <TouchableOpacity onPress={handleCloseModal}>
+                <MaterialIcons
+                  name="close"
+                  color={colors.gray[700]}
+                  size={24}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <Text className="mb-3 text-base font-bold text-white">
+              Tipo
+            </Text>
+
+            <View className="mb-6 flex-row gap-3">
+              <TouchableOpacity
+                className={clsx(
+                  'h-[48px] flex-1 items-center justify-center rounded-lg',
+                  localFilters.typeId === TransactionTypes.revenue
+                    ? 'bg-accent-brand'
+                    : 'bg-background-primary',
+                )}
+                onPress={() => handleSetType(TransactionTypes.revenue)}
+              >
+                <Text className="font-bold text-white">
+                  Entrada
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className={clsx(
+                  'h-[48px] flex-1 items-center justify-center rounded-lg',
+                  localFilters.typeId === TransactionTypes.expense
+                    ? 'bg-accent-red'
+                    : 'bg-background-primary',
+                )}
+                onPress={() => handleSetType(TransactionTypes.expense)}
+              >
+                <Text className="font-bold text-white">
+                  Saída
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text className="mb-3 text-base font-bold text-white">
+              Categoria
+            </Text>
+
+            <FlatList
+              data={categories}
+              keyExtractor={(item) => `filter-category-${item.id}`}
+              className="max-h-[220px]"
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  className={clsx(
+                    'mb-2 h-[45px] justify-center rounded-lg px-4',
+                    localFilters.categoryId === item.id
+                      ? 'bg-accent-brand'
+                      : 'bg-background-primary',
+                  )}
+                  onPress={() => handleSetCategory(item.id)}
+                >
+                  <Text className="text-white">
+                    {item.name}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+
+            <View className="mt-6 flex-row gap-3">
+              <TouchableOpacity
+                className="h-[50px] flex-1 items-center justify-center rounded-xl border border-accent-brand"
+                onPress={handleClearFilters}
+              >
+                <Text className="font-bold text-accent-brand">
+                  Limpar filtro
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="h-[50px] flex-1 items-center justify-center rounded-xl bg-accent-brand"
+                onPress={handleApplyFilters}
+              >
+                <Text className="font-bold text-white">
+                  Filtrar
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }
