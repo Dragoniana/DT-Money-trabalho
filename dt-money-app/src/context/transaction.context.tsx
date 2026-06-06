@@ -106,7 +106,7 @@ export const TransactionContextProvider: FC<PropsWithChildren> = ({
         perPage: pagination.perPage,
         searchText,
         typeId: filters.typeId,
-        categoryId: filters.categoryId,
+        categoryIds: filters.categoryId ? [filters.categoryId] : undefined,
       })
 
       if (page === 1) {
@@ -138,7 +138,7 @@ export const TransactionContextProvider: FC<PropsWithChildren> = ({
       perPage: page * perPage,
       searchText,
       typeId: filters.typeId,
-      categoryId: filters.categoryId,
+      categoryIds: filters.categoryId ? [filters.categoryId] : undefined,
     })
 
     setTransactions(transactionResponse.data)
