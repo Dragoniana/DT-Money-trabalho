@@ -22,9 +22,12 @@ export function Home() {
     loadMoreTransactions,
     loadings,
     handleLoadings,
+    pagination,
   } = useTransactionContext()
 
   const { errorHandler } = useErrorHandler()
+
+  const hasMoreTransactions = pagination.page < pagination.totalPages
 
   const handleFetchCategories = async () => {
     try {
@@ -65,6 +68,10 @@ export function Home() {
   }
 
   const handleLoadMoreTransactions = async () => {
+    if (!hasMoreTransactions || loadings.loadMore) {
+      return
+    }
+
     try {
       handleLoadings({
         key: 'loadMore',
@@ -129,7 +136,7 @@ export function Home() {
           loadings.initial ? null : <EmptyList />
         }
         ListFooterComponent={() =>
-          loadings.loadMore ? (
+          loadings.loadMore && hasMoreTransactions ? (
             <ActivityIndicator
               color={colors['accent-brand-light']}
               size="large"
@@ -142,7 +149,7 @@ export function Home() {
             onRefresh={handleRefreshTransactions}
           />
         }
-        onEndReached={handleLoadMoreTransactions}
+        onEndReached={hasMoreTransactions ? handleLoadMoreTransactions : null}
         onEndReachedThreshold={0.5}
       />
     </SafeAreaView>

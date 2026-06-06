@@ -3,7 +3,8 @@ import { AppInput } from '@/components/AppInput'
 import { useAuthContext } from '@/context/auth.context'
 import { PublicStackParamsList } from '@/routes/PublicRoutes'
 import { colors } from '@/shared/colors'
-import { useErrorHandler } from '@/shared/hooks/useErrorHandler'
+import { AppError } from '@/shared/helpers/appError'
+import { useSnackbarContext } from '@/context/snackbar.context'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
@@ -16,7 +17,7 @@ export function LoginForm() {
   const navigation = useNavigation<StackNavigationProp<PublicStackParamsList>>()
 
   const { handleAuthenticate } = useAuthContext()
-  const { errorHandler } = useErrorHandler()
+  const { notify } = useSnackbarContext()
 
   const {
     control,
@@ -34,7 +35,15 @@ export function LoginForm() {
     try {
       await handleAuthenticate(userData)
     } catch (error) {
-      errorHandler(error, 'Falha ao logar')
+      const message =
+        error instanceof AppError
+          ? error.message
+          : 'E-mail ou senha inválidos'
+
+      notify({
+        message,
+        messageType: 'error',
+      })
     }
   }
 
